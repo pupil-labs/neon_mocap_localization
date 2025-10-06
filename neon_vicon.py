@@ -12,14 +12,14 @@ class Neon:
     def set_pose_in_surface(self, pose):
         self.pose_in_surface = pose
 
-    def calculate_pose_in_optitrack(self, display_pose_optitrack):
+    def calculate_pose_in_vicon(self, display_pose_vicon):
         if self.pose_in_surface is None:
             raise ValueError("Pose in surface coordinates is not set.")
 
-        # convert neon pose in display surface coordinates to optitrack format
-        neon_pose_in_display_surface_optitrack = (
-            self.pose_in_surface.to_pupil_labs_optitrack_format()
+        # convert neon pose in display surface coordinates to vicon format
+        neon_pose_in_display_surface_vicon = (
+            self.pose_in_surface.to_pupil_labs_vicon_format()
         )
-        self.pose_in_optitrack = display_pose_optitrack.apply(
-            neon_pose_in_display_surface_optitrack
+        self.pose_in_vicon = display_pose_vicon.apply(
+            neon_pose_in_display_surface_vicon
         )

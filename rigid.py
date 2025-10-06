@@ -18,7 +18,7 @@ def fit_plane(centers, orient_towards=None):
             orient_towards = orient_towards[:, np.newaxis]
         ref_vec = orient_towards.mean(axis=1) - centroid.squeeze()
 
-        if np.dot(normal, ref_vec) < 0:
+        if np.dot(normal, ref_vec) > 0:
             normal = -normal
 
         U[:, 2] = normal

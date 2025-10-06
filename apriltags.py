@@ -1,7 +1,7 @@
 import cv2
 from pupil_apriltags import Detector
 
-from pose import Pose
+from pose_vicon import Pose
 
 
 class AprilTags:

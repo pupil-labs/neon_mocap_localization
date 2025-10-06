@@ -83,9 +83,9 @@ def plot_apriltag_and_surface_in_neon(
         0,
         0,
         0,
-        0.2,
+        1000.2,
         color="r",
-        length=0.05,
+        length=200.05,
         normalize=True,
     )
 
@@ -157,7 +157,7 @@ def plot_neon_in_surface(
     )
 
     cam_z_axis_in_surface = neon_pose_in_surface.rotation @ np.array(
-        [[0], [0], [0.5]]
+        [[0], [0], [1000.5]]
     )  # 50cm forward
 
     # Plot camera Z axis (forward direction)
@@ -169,7 +169,7 @@ def plot_neon_in_surface(
         cam_z_axis_in_surface[1, 0],
         cam_z_axis_in_surface[2, 0],
         color="r",
-        length=0.1,
+        length=200.1,
         normalize=True,
     )
 
@@ -184,97 +184,85 @@ def plot_neon_in_surface(
     plt.show()
 
 
-def plot_neon_in_optitrack(
+def plot_neon_in_vicon(
     neon,
-    all_display_tag_markers_optitrack,
-    neon_marker_positions_in_optitrack,
-    cam_z_axis_in_optitrack,
+    display_positions_vicon,
+    neon_marker_positions_in_vicon,
+    cam_z_axis_in_vicon,
 ):
-    tag_1_marker_positions_in_optitrack = all_display_tag_markers_optitrack[
-        (all_display_tag_markers_optitrack[:, 2] > 1.27)
-        & (all_display_tag_markers_optitrack[:, 0] < 0)
-    ]
-    tag_2_marker_positions_in_optitrack = all_display_tag_markers_optitrack[
-        (all_display_tag_markers_optitrack[:, 2] > 1.27)
-        & (all_display_tag_markers_optitrack[:, 0] > 0)
-    ]
-    tag_3_marker_positions_in_optitrack = all_display_tag_markers_optitrack[
-        (all_display_tag_markers_optitrack[:, 2] < 1.27)
-        & (all_display_tag_markers_optitrack[:, 0] > 0)
-    ]
-    tag_4_marker_positions_in_optitrack = all_display_tag_markers_optitrack[
-        (all_display_tag_markers_optitrack[:, 2] < 1.27)
-        & (all_display_tag_markers_optitrack[:, 0] < 0)
-    ]
+    tag_1_marker_positions_in_vicon = display_positions_vicon[0, :, :].squeeze()
+    tag_2_marker_positions_in_vicon = display_positions_vicon[1, :, :].squeeze()
+    tag_3_marker_positions_in_vicon = display_positions_vicon[2, :, :].squeeze()
+    tag_4_marker_positions_in_vicon = display_positions_vicon[3, :, :].squeeze()
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
     ax.plot(
-        tag_1_marker_positions_in_optitrack[:, 0],
-        tag_1_marker_positions_in_optitrack[:, 1],
-        tag_1_marker_positions_in_optitrack[:, 2],
+        tag_1_marker_positions_in_vicon[:, 0],
+        tag_1_marker_positions_in_vicon[:, 1],
+        tag_1_marker_positions_in_vicon[:, 2],
         "ko",
         label="Tag Markers",
     )
     ax.plot(
-        tag_1_marker_positions_in_optitrack[0, 0],
-        tag_1_marker_positions_in_optitrack[0, 1],
-        tag_1_marker_positions_in_optitrack[0, 2],
+        tag_1_marker_positions_in_vicon[0, 0],
+        tag_1_marker_positions_in_vicon[0, 1],
+        tag_1_marker_positions_in_vicon[0, 2],
         "go",
     )
 
     ax.plot(
-        tag_2_marker_positions_in_optitrack[:, 0],
-        tag_2_marker_positions_in_optitrack[:, 1],
-        tag_2_marker_positions_in_optitrack[:, 2],
+        tag_2_marker_positions_in_vicon[:, 0],
+        tag_2_marker_positions_in_vicon[:, 1],
+        tag_2_marker_positions_in_vicon[:, 2],
         "ko",
     )
     ax.plot(
-        tag_2_marker_positions_in_optitrack[1, 0],
-        tag_2_marker_positions_in_optitrack[1, 1],
-        tag_2_marker_positions_in_optitrack[1, 2],
+        tag_2_marker_positions_in_vicon[1, 0],
+        tag_2_marker_positions_in_vicon[1, 1],
+        tag_2_marker_positions_in_vicon[1, 2],
         "ro",
     )
 
     ax.plot(
-        tag_3_marker_positions_in_optitrack[:, 0],
-        tag_3_marker_positions_in_optitrack[:, 1],
-        tag_3_marker_positions_in_optitrack[:, 2],
+        tag_3_marker_positions_in_vicon[:, 0],
+        tag_3_marker_positions_in_vicon[:, 1],
+        tag_3_marker_positions_in_vicon[:, 2],
         "ko",
     )
     ax.plot(
-        tag_3_marker_positions_in_optitrack[3, 0],
-        tag_3_marker_positions_in_optitrack[3, 1],
-        tag_3_marker_positions_in_optitrack[3, 2],
+        tag_3_marker_positions_in_vicon[3, 0],
+        tag_3_marker_positions_in_vicon[3, 1],
+        tag_3_marker_positions_in_vicon[3, 2],
         "bo",
     )
 
     ax.plot(
-        tag_4_marker_positions_in_optitrack[:, 0],
-        tag_4_marker_positions_in_optitrack[:, 1],
-        tag_4_marker_positions_in_optitrack[:, 2],
+        tag_4_marker_positions_in_vicon[:, 0],
+        tag_4_marker_positions_in_vicon[:, 1],
+        tag_4_marker_positions_in_vicon[:, 2],
         "ko",
     )
     ax.plot(
-        tag_4_marker_positions_in_optitrack[1, 0],
-        tag_4_marker_positions_in_optitrack[1, 1],
-        tag_4_marker_positions_in_optitrack[1, 2],
+        tag_4_marker_positions_in_vicon[1, 0],
+        tag_4_marker_positions_in_vicon[1, 1],
+        tag_4_marker_positions_in_vicon[1, 2],
         "mo",
     )
 
     ax.plot(
-        neon_marker_positions_in_optitrack[0, :],
-        neon_marker_positions_in_optitrack[1, :],
-        neon_marker_positions_in_optitrack[2, :],
+        neon_marker_positions_in_vicon[0, :],
+        neon_marker_positions_in_vicon[1, :],
+        neon_marker_positions_in_vicon[2, :],
         "rs",
         label="Neon Markers",
     )
 
     # Plot estimated scene camera position
     ax.scatter(
-        neon.pose_in_optitrack.position[0],
-        neon.pose_in_optitrack.position[1],
-        neon.pose_in_optitrack.position[2],
+        neon.pose_in_vicon.position[0],
+        neon.pose_in_vicon.position[1],
+        neon.pose_in_vicon.position[2],
         color="b",
         marker="s",
         s=50,
@@ -283,14 +271,14 @@ def plot_neon_in_optitrack(
 
     # Plot camera Z axis (forward direction)
     ax.quiver(
-        neon.pose_in_optitrack.position[0],
-        neon.pose_in_optitrack.position[1],
-        neon.pose_in_optitrack.position[2],
-        cam_z_axis_in_optitrack[0, 0],
-        cam_z_axis_in_optitrack[1, 0],
-        cam_z_axis_in_optitrack[2, 0],
+        neon.pose_in_vicon.position[0],
+        neon.pose_in_vicon.position[1],
+        neon.pose_in_vicon.position[2],
+        cam_z_axis_in_vicon[0, 0],
+        cam_z_axis_in_vicon[1, 0],
+        cam_z_axis_in_vicon[2, 0],
         color="r",
-        length=0.1,
+        length=200.1,
         normalize=True,
     )
 
@@ -299,20 +287,20 @@ def plot_neon_in_optitrack(
     ax.set_zlabel("Z")
 
     ax.legend()
-    ax.set_title("Neon in OptiTrack Coordinate System")
+    ax.set_title("Neon in Vicon Coordinate System")
     ax.set_box_aspect([1, 1, 0.5])
 
     plt.show()
 
 
-def plot_surface_local_coordinate_system_in_optitrack(
-    all_display_tag_markers_optitrack,
-    display_pose_optitrack,
+def plot_surface_local_coordinate_system_in_vicon(
+    all_display_tag_markers_vicon,
+    display_pose_vicon,
 ):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
 
-    for marker in all_display_tag_markers_optitrack:
+    for marker in all_display_tag_markers_vicon:
         ax.scatter(
             marker[0],
             marker[1],
@@ -322,32 +310,32 @@ def plot_surface_local_coordinate_system_in_optitrack(
         )
 
     ax.plot(
-        display_pose_optitrack.position[0],
-        display_pose_optitrack.position[1],
-        display_pose_optitrack.position[2],
+        display_pose_vicon.position[0],
+        display_pose_vicon.position[1],
+        display_pose_vicon.position[2],
         "ro",
         label="Display Surface Origin",
     )
 
     ax.quiver(
-        *display_pose_optitrack.position,
-        *display_pose_optitrack.rotation[:, 0],
+        *display_pose_vicon.position,
+        *display_pose_vicon.rotation[:, 0],
         color="r",
-        length=0.05,
+        length=50.05,
         normalize=True,
     )
     ax.quiver(
-        *display_pose_optitrack.position,
-        *display_pose_optitrack.rotation[:, 1],
+        *display_pose_vicon.position,
+        *display_pose_vicon.rotation[:, 1],
         color="g",
-        length=0.05,
+        length=50.05,
         normalize=True,
     )
     ax.quiver(
-        *display_pose_optitrack.position,
-        *display_pose_optitrack.rotation[:, 2],
+        *display_pose_vicon.position,
+        *display_pose_vicon.rotation[:, 2],
         color="b",
-        length=0.05,
+        length=20.05,
         normalize=True,
     )
 

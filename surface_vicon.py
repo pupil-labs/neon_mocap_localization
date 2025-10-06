@@ -1,6 +1,6 @@
 import numpy as np
 
-from pose import Pose
+from pose_vicon import Pose
 from rigid import compute_rigid_transform, fit_plane
 
 
