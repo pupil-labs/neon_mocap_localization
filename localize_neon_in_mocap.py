@@ -1,7 +1,6 @@
 import argparse
 import json
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pupil_labs.neon_recording as plnr
