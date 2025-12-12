@@ -43,8 +43,6 @@ class Surface:
 
         centroid, R = fit_plane(centers.T, orient_towards)
 
-        print(centroid)
-
         self.x_axis = R[:, 0]  # first column = x-axis of best-fit plane
         self.y_axis = R[:, 1]  # second column = y-axis of best-fit
         self.normal = R[:, 2]  # third column = normal to best-fit plane

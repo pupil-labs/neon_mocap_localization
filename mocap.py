@@ -84,7 +84,6 @@ class MocapSurface:
                 zs.append(marker.Zs)
 
         poses = np.vstack([xs, ys, zs])
-        print(poses.shape)
 
         centroid, rotation = fit_plane(poses)
         self.pose = Pose(
