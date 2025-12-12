@@ -17,9 +17,7 @@ class Pose:
 
     def to_pupil_labs_mocap_format(self, R_apriltag_to_mocap):
         """Convert the pose to MoCap coordinate system."""
-        mocap_position = np.array(
-            [self.position[0], self.position[2], -self.position[1]]
-        )
+        mocap_position = R_apriltag_to_mocap @ np.array(self.position)
 
         mocap_rotation = self.rotation.copy()
         mocap_rotation = R_apriltag_to_mocap @ mocap_rotation
