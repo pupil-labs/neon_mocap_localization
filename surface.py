@@ -1,7 +1,6 @@
 import numpy as np
 
 from pose import Pose
-from rigid import fit_plane_simple
 
 
 class Surface:
@@ -70,27 +69,6 @@ class Surface:
             R[:, 2] = self.normal
         except Exception:
             return False
-
-        print("huh")
-
-        self.pose_in_neon = Pose(
-            position=centroid.flatten(),
-            rotation=R,
-        )
-
-        return True
-
-    def build_surface_simple(self, orient_towards):
-        centers = np.stack([pose.position for pose in self.tag_poses], axis=1)
-
-        try:
-            centroid, R = fit_plane_simple(centers, orient_towards)
-        except Exception:
-            return False
-
-        self.x_axis = R[:, 0]  # first column = x-axis of best-fit plane
-        self.y_axis = R[:, 1]  # second column = y-axis of best-fit
-        self.normal = R[:, 2]  # third column = normal to best-fit plane
 
         self.pose_in_neon = Pose(
             position=centroid.flatten(),

@@ -35,34 +35,3 @@ def fit_plane(centers, orient_towards=None):
     U[:, 2] /= np.linalg.norm(U[:, 2])
 
     return centroid, U
-
-
-def fit_plane_simple(centers, orient_towards=None, from_poses=False):
-    centroid = np.mean(centers, axis=1, keepdims=True)
-    centered = centers - centroid
-
-    x_axis = centered[:, 1] - centered[:, 0]
-    y_axis = centered[:, 3] - centered[:, 0]
-    normal = np.cross(centered[:, 1] - centered[:, 0], centered[:, 3] - centered[:, 0])
-
-    if orient_towards is not None:
-        orient_towards = np.asarray(orient_towards, dtype=float)
-
-        # if orient_towards.ndim == 1:
-        # orient_towards = orient_towards[:, np.newaxis]
-
-        ref_vec = orient_towards - centroid.squeeze()
-
-        if np.dot(normal, ref_vec) > 0:
-            normal = -normal
-
-    R = np.zeros((3, 3))
-    R[:, 0] = x_axis
-    R[:, 1] = y_axis
-    R[:, 2] = normal
-
-    R[:, 0] /= np.linalg.norm(R[:, 0])
-    R[:, 1] /= np.linalg.norm(R[:, 1])
-    R[:, 2] /= np.linalg.norm(R[:, 2])
-
-    return centroid, R

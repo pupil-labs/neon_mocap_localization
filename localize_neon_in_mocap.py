@@ -14,12 +14,17 @@ from mocap import (
     MocapHead,
     MocapIRMarker,
     MocapSurface,
+    unify_calib_data,
 )
 from neon import Neon
-from plots import plot_neon_in_mocap
+from plots import (
+    plot_apriltag_and_surface_in_neon,
+    plot_neon_in_mocap,
+    plot_neon_in_surface,
+    plot_surface_local_coordinate_system_in_mocap,
+)
 from pose import Pose
-
-# import threed_utils
+import threed_utils
 
 parser = argparse.ArgumentParser(
     description="Determines relative position of Neon scene camera in MoCap coordinate system"
@@ -63,6 +68,18 @@ neon = Neon(recording=neon_rec)
 
 marker_positions = pd.read_csv(args["mocap_path"])
 
+# matrix that converts between coordinate systems of Neon and MoCap
+# (when following our recommendations in README.md).
+# y and z are swapped and vertical is reversed
+R_apriltag_to_mocap = np.array(
+    [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+    ]
+)
+R_neon_to_mocap = R_apriltag_to_mocap
+
 print("Searching for most accurate localization...")
 smallest_error = float("inf")
 
@@ -105,7 +122,6 @@ for frame in tqdm(range(int(nframes))):
             "TL": 3,
         }
         for tag_corner in ["BL", "BR", "TR", "TL"]:
-            # for tag_corner in ["TL", "TR", "BR", "BL"]:
             marker_pos_X = markers_for_calib[f"T{tag_num}{tag_corner}_X"].squeeze()
             marker_pos_Y = markers_for_calib[f"T{tag_num}{tag_corner}_Y"].squeeze()
             marker_pos_Z = markers_for_calib[f"T{tag_num}{tag_corner}_Z"].squeeze()
@@ -117,7 +133,10 @@ for frame in tqdm(range(int(nframes))):
             )
 
         mocap_apriltag.estimate_tag_center()
+        mocap_apriltag.estimate_size_mm()
         mocap_surface.add_apriltag(mocap_apriltag)
+
+    mocap_surface.construct_pose()
 
     # extract the marker positions for the head pose into a convenient object
     mocap_head = MocapHead()
@@ -149,19 +168,17 @@ for frame in tqdm(range(int(nframes))):
         continue
 
     # apply calibration data
-    rmse = neon.calculate_pose_in_mocap(
-        mocap_surface,
-        neon_apriltags,
+    neon_surface, neon_apriltags = unify_calib_data(
+        neon, mocap_surface, apriltag_img, R_apriltag_to_mocap
     )
-    if rmse is None:
-        continue
 
-    if rmse < smallest_error:
-        smallest_error = rmse
+    err = neon_apriltags.reprojection_errors
+    if np.mean(err) < smallest_error:
+        smallest_error = np.mean(err)
     else:
         continue
 
-    rmses.append(rmse)
+    rmses.append(err)
 
     # determine position of neon camera relative to frame markers
     try:
@@ -187,31 +204,28 @@ for frame in tqdm(range(int(nframes))):
         "best_frame": frame,
         "timestamp": neon_timestamp,
         "neon_apriltags": neon_apriltags,
+        "neon_surface": neon_surface,
         "neon_camera_pose_relative_to_markers": neon_camera_pose_relative_to_markers,
         "mocap_surface": mocap_surface,
         "mocap_head": mocap_head,
         "rmses": rmses,
     }
 
-# if len(rmses) > 0:
-# plt.hist(best_calib_data["rmses"])
-# plt.show()
-
 # plot tags and surface in neon camera coordinates as sanity check
-# plot_apriltag_and_surface_in_neon(
-# best_calib_data["neon_apriltags"],
-# best_calib_data["neon_surface"],
-# )
+plot_apriltag_and_surface_in_neon(
+    best_calib_data["neon_apriltags"],
+    best_calib_data["neon_surface"],
+)
 
 # plot neon's pose in display surface coordinates as sanity check
-# plot_neon_in_surface(
-# neon.pose_in_surface,
-# best_calib_data["neon_surface"],
-# )
+plot_neon_in_surface(
+    neon.pose_in_surface,
+    best_calib_data["neon_surface"],
+)
 
 # plot surface local coordinate system in mocap space,
 # as obtained via SVD, as sanity check
-# plot_surface_local_coordinate_system_in_mocap(best_calib_data["mocap_surface"])
+plot_surface_local_coordinate_system_in_mocap(best_calib_data["mocap_surface"])
 
 cam_z_axis_in_mocap = neon.pose_in_mocap.rotation @ np.array([[0], [0], [1.0]])
 
