@@ -135,8 +135,6 @@ for frame in tqdm(range(int(nframes))):
         mocap_apriltag.estimate_size_mm()
         mocap_surface.add_apriltag(mocap_apriltag)
 
-    mocap_surface.construct_pose()
-
     # extract the marker positions for the head pose into a convenient object
     mocap_head = MocapHead()
 
@@ -161,8 +159,10 @@ for frame in tqdm(range(int(nframes))):
 
         neon_marker_num += 1
 
-    # neon_apriltags = AprilTags(neon, mocap_surface.tag_size, apriltag_img)
-    neon_apriltags = AprilTags(neon, 130, apriltag_img)
+    mocap_surface.construct_pose(orient_towards=mocap_head.markers[0].position)
+
+    neon_apriltags = AprilTags(neon, mocap_surface.tag_size, apriltag_img)
+    # neon_apriltags = AprilTags(neon, 135, apriltag_img)
     if not neon_apriltags.good_detection:
         continue
 
@@ -171,9 +171,12 @@ for frame in tqdm(range(int(nframes))):
         neon, mocap_surface, apriltag_img, R_apriltag_to_mocap
     )
 
+    if neon_surface is None or neon_apriltags is None:
+        continue
+
     err = neon_apriltags.reprojection_errors
-    if np.mean(err) < smallest_error:
-        smallest_error = np.mean(err)
+    if np.sum(err) < smallest_error:
+        smallest_error = np.sum(err)
     else:
         continue
 

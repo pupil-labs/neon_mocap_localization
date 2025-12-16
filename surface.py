@@ -1,6 +1,8 @@
 import numpy as np
+import open3d as o3d
 
 from pose import Pose
+from rigid import get_plane_coordinate_system
 
 
 class Surface:
@@ -15,52 +17,51 @@ class Surface:
         self.surface_corners.append(pose.position)
 
     def build_surface(self, orient_towards, from_poses=True):
-        # centers = np.stack([pose.position for pose in self.tag_poses], axis=1)
-        if not from_poses:
-            tag_half = self.tag_size / 2
-            tag_plane = np.array(
-                [
-                    [-tag_half, -tag_half, 0],
-                    [tag_half, -tag_half, 0],
-                    [tag_half, tag_half, 0],
-                    [-tag_half, tag_half, 0],
-                    [-tag_half, -tag_half, 0],
-                ]
-            )
+        tag_half = self.tag_size / 2
+        tag_plane = np.array(
+            [
+                [-tag_half, -tag_half, 0],
+                [tag_half, -tag_half, 0],
+                [tag_half, tag_half, 0],
+                [-tag_half, tag_half, 0],
+            ]
+        )
 
-            centers = np.zeros((len(self.tag_poses), 5, 3))
-            for i, tag_pose in enumerate(self.tag_poses):
-                # Transform tag corners to camera frame using tag_pose
-                tag_corners_in_cam = (
-                    tag_pose.rotation @ tag_plane.T
-                ).T + tag_pose.position
+        points = np.zeros((len(self.tag_poses), 5, 3))
+        for i, tag_pose in enumerate(self.tag_poses):
+            # Transform tag corners to camera frame using tag_pose
+            tag_corners_in_cam = (tag_pose.rotation @ tag_plane.T).T + tag_pose.position
 
-                for c in range(5):
-                    centers[i, c] = tag_corners_in_cam[c]
+            for c in range(4):
+                points[i, c] = tag_corners_in_cam[c]
 
-            centers.shape = (-1, 3)
+            points[i, 4] = self.surface_corners[i]
+
+        points.shape = (-1, 3)
+
+        centroid = np.mean(points, axis=0)
 
         try:
-            centroid = np.mean(np.array(self.surface_corners), axis=0)
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(points)
 
-            # top right - top left
-            self.x_axis = self.surface_corners[1] - self.surface_corners[0]
-            self.x_axis /= np.linalg.norm(self.x_axis)
+            plane_model, inliers = pcd.segment_plane(
+                distance_threshold=0.01, ransac_n=3, num_iterations=1000
+            )
+            [a, b, c, d] = plane_model
 
-            # top left - bottom left
-            self.y_axis = -(self.surface_corners[3] - self.surface_corners[0])
-            self.y_axis /= np.linalg.norm(self.y_axis)
+            inlier_cloud = np.asarray(pcd.select_by_index(inliers).points)
 
-            # cross-product of x & y
-            self.normal = np.cross(self.x_axis, self.y_axis)
-            self.normal /= np.linalg.norm(self.normal)
+            (self.x_axis, self.y_axis, self.normal) = get_plane_coordinate_system(
+                inlier_cloud
+            )
 
             if orient_towards is not None:
                 orient_towards = np.asarray(orient_towards, dtype=float)
 
                 ref_vec = orient_towards - centroid.squeeze()
 
-                if np.dot(self.normal, ref_vec) < 0:
+                if np.dot(self.normal, ref_vec) > 0:
                     self.normal = -self.normal
 
             R = np.zeros((3, 3))
