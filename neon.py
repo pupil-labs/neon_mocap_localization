@@ -28,7 +28,7 @@ class Neon:
         neon_apriltags,
     ):
         K = neon_apriltags.K
-        D = neon_apriltags.D
+        D = np.zeros((5, 1), dtype=np.float32)
 
         apriltag_corners = [
             [[corner[0], corner[1]] for corner in tag_corners]
@@ -36,7 +36,6 @@ class Neon:
         ]
 
         image_points_2d = np.array(apriltag_corners)
-        # print(image_points_2d.shape)
 
         mocap_corners = [
             [[marker.Xs, marker.Ys, marker.Zs] for marker in apriltag.markers]
@@ -44,13 +43,9 @@ class Neon:
         ]
 
         mocap_points_3d = np.array(mocap_corners)
-        # print("yo")
-        # print(mocap_points_3d.shape)
 
         image_pts = image_points_2d.reshape(-1, 2)
         object_pts = mocap_points_3d.reshape(-1, 3)
-        # print(image_pts.shape)
-        # print(object_pts.shape)
 
         image_pts_safe = np.ascontiguousarray(image_pts, dtype=np.float64)
         object_pts_safe = np.ascontiguousarray(object_pts, dtype=np.float64)
