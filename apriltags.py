@@ -1,22 +1,12 @@
-import numpy as np
-
 import cv2
-from pupil_apriltags import Detector
+import numpy as np
 
 from pose import Pose
 
 
 class AprilTags:
-    def __init__(self, neon, tag_size, img):
-        self.at_detector = Detector(
-            families="tag36h11",
-            nthreads=4,
-            quad_decimate=1.0,
-            quad_sigma=0.0,
-            refine_edges=1,
-            decode_sharpening=0.25,
-            debug=0,
-        )
+    def __init__(self, detector, neon, tag_size, img):
+        self.detector = detector
         self.K = neon.camera_matrix
         self.D = neon.dist_coeffs
         self.tag_size = tag_size
@@ -49,7 +39,7 @@ class AprilTags:
         cy = self.new_K[1, 2]
 
         try:
-            self.at_detection = self.at_detector.detect(
+            self.at_detection = self.detector.detect(
                 self.undist_frame,
                 estimate_tag_pose=True,
                 tag_size=self.tag_size,
@@ -63,53 +53,6 @@ class AprilTags:
             self.good_detection = False
             return
 
-        # colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0), (0, 255, 255)]
-
-        # image = self.undist_frame
-        # for detection in self.at_detection:
-        #     tag_id = detection.tag_id
-        #     corners = detection.corners
-        #     center = detection.center
-
-        #     pts = corners.astype(np.int32).reshape((-1, 1, 2))
-        #     cv2.polylines(image, [pts], True, (0, 255, 0), 2)
-
-        #     for i in range(4):
-        #         pt = tuple(corners[i].astype(int))
-
-        #         cv2.circle(image, pt, 8, colors[i], -1)
-
-        #         cv2.putText(
-        #             image,
-        #             str(i),
-        #             (pt[0] + 10, pt[1] + 10),
-        #             cv2.FONT_HERSHEY_SIMPLEX,
-        #             0.8,
-        #             colors[i],
-        #             2,
-        #         )
-
-        #         cv2.putText(
-        #             image,
-        #             f"ID: {tag_id}",
-        #             (int(center[0]), int(center[1])),
-        #             cv2.FONT_HERSHEY_SIMPLEX,
-        #             0.8,
-        #             (0, 0, 255),
-        #             2,
-        #         )
-
-        # cv2.imshow("Pupil Apriltags Visualization", image)
-        # cv2.destroyAllWindows()
-
-        # tag_points_3d = np.array(
-        #     [
-        #         [-self.tag_size / 2, self.tag_size / 2, 0],  # BL
-        #         [self.tag_size / 2, self.tag_size / 2, 0],  # BR
-        #         [self.tag_size / 2, -self.tag_size / 2, 0],  # TR
-        #         [-self.tag_size / 2, -self.tag_size / 2, 0],  # TL
-        #     ]
-        # )
         tag_points_3d = np.array(
             [
                 [self.tag_size / 2, -self.tag_size / 2, 0],  # TR
@@ -119,14 +62,16 @@ class AprilTags:
             ]
         )
 
+        zeroed_D = np.zeros((5, 1), dtype=np.float32)
+
         for detection in self.at_detection:
             # SOLVEPNP_IPPE_SQUARE returns 2 solutions for rotation/position/error.
             # First one always has smallest error
             ok, (tag_rotation, _), (tag_position, _), (error, _) = cv2.solvePnPGeneric(
-                tag_points_3d,
-                detection.corners,
-                self.new_K,
-                self.D,
+                objectPoints=tag_points_3d,
+                imagePoints=detection.corners,
+                cameraMatrix=self.new_K,
+                distCoeffs=zeroed_D,
                 flags=cv2.SOLVEPNP_IPPE_SQUARE,
             )
 
@@ -134,12 +79,7 @@ class AprilTags:
                 self.good_detection = False
                 return
 
-            # if detection.tag_id == 0:
             self.reprojection_errors.append(error)
-
-            # corners = detection.corners
-            # corners = [np.roll(corner_array, 2, axis=1) for corner_array in corners]
-            # self.tag_corners.append(corners)
 
             # 1 is BL
             # 2 is BR

@@ -193,25 +193,20 @@ for frame in tqdm(range(int(nframes))):
 
         neon_marker_num += 1
 
-    # neon_apriltags = AprilTags(neon, mocap_surface.tag_size, apriltag_img)
-    neon_apriltags = AprilTags(neon, 130, apriltag_img)
-    if not neon_apriltags.good_detection:
-        continue
+    # # apply calibration data
+    # rmse = neon.calculate_pose_in_mocap(
+    #     mocap_surface,
+    #     neon_apriltags,
+    # )
+    # if rmse is None:
+    #     continue
 
-    # apply calibration data
-    rmse = neon.calculate_pose_in_mocap(
-        mocap_surface,
-        neon_apriltags,
-    )
-    if rmse is None:
-        continue
+    # if rmse < smallest_error:
+    #     smallest_error = rmse
+    # else:
+    #     continue
 
-    if rmse < smallest_error:
-        smallest_error = rmse
-    else:
-        continue
-
-    rmses.append(rmse)
+    # rmses.append(rmse)
 
     # determine position of neon camera relative to frame markers
     try:
@@ -242,10 +237,6 @@ for frame in tqdm(range(int(nframes))):
         "mocap_head": mocap_head,
         "rmses": rmses,
     }
-
-# if len(rmses) > 0:
-# plt.hist(best_calib_data["rmses"])
-# plt.show()
 
 # plot tags and surface in neon camera coordinates as sanity check
 # plot_apriltag_and_surface_in_neon(
