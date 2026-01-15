@@ -76,6 +76,10 @@ class MocapAprilTag:
 class MocapSurface:
     def __init__(self):
         self.apriltags = []
+        self.markers = []
 
     def add_apriltag(self, apriltag):
         self.apriltags.append(apriltag)
+
+    def add_marker(self, marker):
+        self.markers.append(marker)
