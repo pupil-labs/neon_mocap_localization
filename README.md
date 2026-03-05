@@ -234,18 +234,9 @@ The `config.json` file controls the localization parameters. Ensure these match 
 
 Run the main script using the **Calibration Sequence** (from Phase 1, Step 3) to generate the pose file.
 
-There are two methods for establishing the board's position:
+Use the following method to establish the board's position:
 
-**Method 1: Screen-Mapped Gaze (Recommended)**
-
-- Map gaze to the calibration "Surface" in [Pupil Cloud](https://docs.pupil-labs.com/neon/pupil-cloud/enrichments/marker-mapper/) or [Neon Player](https://docs.pupil-labs.com/neon/neon-player/surface-tracker/).
-- Pass the resulting CSV to the script.
-
-```bash
-python ./commands/mocap_compute_alignment.py -r [Neon_Folder] -m [MoCap_CSV] -c config.json --surface_gaze_path [surface_gaze.csv]
-```
-
-**Method 2: Local Corner Measurements**
+**Local Corner Measurements**
 
 - Manually measure the 16 corners of the 4 AprilTags.
 - **Origin (0,0):** Top-Left corner of the Top-Left tag.
