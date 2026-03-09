@@ -138,6 +138,12 @@ for frame in tqdm(range(len(marker_positions))):
         gaze_origins[frame, :] = np.nan
         gaze_dirs[frame, :] = np.nan
     else:
+        if config["flip_gaze_x"]:
+            gaze_dir_mocap[0] *= -1
+
+        if config["flip_gaze_y"]:
+            gaze_dir_mocap[1] *= -1
+
         gaze_origins[frame, :] = (
             neon.transformed_pose_in_mocap.position
             / config["mocap_unit_conversion_factor"]
