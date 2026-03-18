@@ -5,6 +5,8 @@
     [0, 1, 0],
     [0, 0, 1]
   ],
+  "flip_gaze_x": false,
+  "flip_gaze_y": false,
   "apriltag_black_side_length": 0.123,
   "ir_marker_radius": 0.006,
   "apriltag_pattern_width": 0.6,
