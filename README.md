@@ -24,20 +24,13 @@ Before proceeding to data collection, it is critical to establish a proper time 
 **Specific Vendor Instructions:**
 
 - **Qualisys / OptiTrack:** Use the **Lab Streaming Layer (LSL)** method. Capture Neon's LSL Gaze Stream and the MoCap LSL streams. If using Optitrack, make sure Motive's start/stop events are recorded via LSL.
-- **Vicon:** Use LSL with our provided `rt_sync_neon_vicon.py` script in the `commands`
-  directory. You will need to do the following:
-  - Install [Vicon's DataStream SDK](https://www.vicon.com/software/datastream-sdk/)
-  - Install the required Python packages into a virtual environment::
-    `pip install pylsl pupil-labs-realtime-api`
-  - Then, install the Vicon SDK Python integration into that same virtual environment:
-    `pip install "C:\Program Files\Vicon\DataStream SDK\Win64\Python\vicon_dssdk"`
-  - If you get permission errors, then:
-    - Right click `C:\Program Files\Vicon\DataStream SDK\Win64\Python` and choose `Properties`
-    - Go to the `Security` tab, click `Edit` to change permissions, and give your
-      user full control
-  - Once that is finished, start LabRecorder.
-  - Next, start the script and follow the instructions that appear in the terminal:
-    `python rt_sync_neon_vicon.py`
+- **Vicon:** Use a Vicon LockBox with an Arduino (or any suitable microcontroller or SBC):
+  - The Vicon LockBox puts out regular TTL sync pulses.
+  - These TTL pulses can be received by the Arduino/ and timestamped, making sure to
+    account for transmission delay.
+  - These can then be forwarded to a recording PC, which receives them via
+    [pyserial](https://pyserial.readthedocs.io/en/latest/pyserial.html).
+  - The recording PC, then converts these to Neon [Events](https://docs.pupil-labs.com/neon/data-collection/events/) and sends them to Neon via the [Real-time API](https://pupil-labs.github.io/pl-realtime-api/dev/methods/simple/remote-control/#save-events).
 
 If you use one of these methods, then your data will be compatible with our sync & conversion scripts described below.
 
@@ -165,7 +158,7 @@ By default, the scripts assume the following MoCap configuration based on a cali
 - **Z-Axis:** Points Forward (away from the body).
 
 > [!TIP]
-> Note: If a different convention is used, the `T_neon_to_mocap` matrix in `config.json` must be modified. It will most likely need to be a [permutation matrix](https://en.wikipedia.org/wiki/Permutation_matrix). Note that Neon follows OpenCV conventions (see the [Neon 3D eye pose diagram](https://docs.pupil-labs.com/neon/data-collection/data-streams/#_3d-eye-poses)).
+> Note: If a different convention is used, the `T_mocap_to_apriltag` matrix in `config.json` must be modified. It will most likely need to be a [permutation matrix](https://en.wikipedia.org/wiki/Permutation_matrix). Note that Neon follows OpenCV conventions (see the [Neon 3D eye pose diagram](https://docs.pupil-labs.com/neon/data-collection/data-streams/#_3d-eye-poses)).
 
 #### 3. Recording the Calibration Sequence
 
@@ -233,7 +226,7 @@ The `config.json` file controls the localization parameters. Ensure these match 
 | Key                                 | Type    | Description                                                                                                                                                                                                                                                                           |
 | ----------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `qualisys_reference_marker`         | String  | The label of a clearly detected marker used for Qualisys LSL time sync. Leave as the empty string, "", if you do not use a Qualisys device.                                                                                                                                           |
-| `T_neon_to_mocap`                   | Matrix  | Transformation matrix aligning Neon's coordinate system with the MoCap system.                                                                                                                                                                                                        |
+| `T_mocap_to_apriltag`               | Matrix  | Transformation matrix aligning the local coordinate system of the calibration board in MoCap space with the local coordinate system of the calibration board in Neon scene camera space.                                                                                              |
 | `flip_gaze_x`                       | Boolean | If the MoCap coordinate system has X positive to the left, set this to true.                                                                                                                                                                                                          |
 | `flip_gaze_y`                       | Boolean | If the MoCap coordinate system has Y positive downwards, set this to true.                                                                                                                                                                                                            |
 | `apriltag_black_side_length`        | Float   | The length of one black side of a printed AprilTag (in **meters**).                                                                                                                                                                                                                   |
@@ -294,4 +287,4 @@ render it out as a video.
 
 - **Inverted Axes:**
 
-  If gaze appears mirrored, verify the `T_neon_to_mocap` matrix in `config.json` and ensure consistency with OpenCV coordinate conventions.
+  If gaze appears mirrored, verify the `T_mocap_to_apriltag` matrix in `config.json` and ensure consistency with OpenCV coordinate conventions.
