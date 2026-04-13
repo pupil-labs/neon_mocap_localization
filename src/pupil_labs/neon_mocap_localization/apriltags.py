@@ -10,7 +10,7 @@ from pupil_labs.neon_mocap_localization.pose import Pose
 class AprilTags:
     def __init__(
         self,
-        detector: Detector,
+        detector: Detector,  # type: ignore
         neon: Neon,
         tag_size: float,
         img: npt.NDArray[np.uint8],
@@ -62,7 +62,7 @@ class AprilTags:
             self.good_detection = False
             return
 
-        if len(self.at_detection) < len(self.apriltags_to_use):  # type: ignore
+        if len(self.at_detection) < len(self.apriltags_to_use):
             self.good_detection = False
             return
 
@@ -70,7 +70,7 @@ class AprilTags:
 
         at_tag_pts = np.zeros((len(self.apriltags_to_use), 4, 2), dtype=np.float32)
         c = 0
-        for detection in self.at_detection:  # type: ignore
+        for detection in self.at_detection:
             if str(detection.tag_id) in self.apriltags_to_use:
                 # at_tag_pts[str(detection.tag_id)] = detection.corners
                 at_tag_pts[c] = detection.corners

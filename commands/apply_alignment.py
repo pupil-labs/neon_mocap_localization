@@ -1,6 +1,7 @@
 import argparse
 import json
 import pickle
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -40,13 +41,6 @@ parser.add_argument(
     help="The base name of the file with the calibration data (i.e., without \
 the '.pkl' extension)",
     default="calibration_data.pkl",
-)
-parser.add_argument(
-    "-o",
-    "--output_path",
-    help="The path for outputting the aligned data to CSV format.",
-    default="marker_positions_w_gaze.csv",
-    required=True,
 )
 
 args = vars(parser.parse_args())
@@ -160,4 +154,9 @@ marker_positions["gaze_dir_X"] = gaze_dirs[:, 0]
 marker_positions["gaze_dir_Y"] = gaze_dirs[:, 1]
 marker_positions["gaze_dir_Z"] = gaze_dirs[:, 2]
 
-marker_positions.to_csv(args["output_path"])
+marker_positions.to_csv(
+    str(Path(args["mocap_path"]).parent)
+    + "/"
+    + Path(args["mocap_path"]).stem
+    + "_with_gaze.csv"
+)

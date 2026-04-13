@@ -102,12 +102,12 @@ if tag_corner_coordinates:
 
         tag_corner_coordinates[k] = m
 
-    for k, v in tag_corner_coordinates.items():
+    for _k, v in tag_corner_coordinates.items():
         v[:, 0] -= plane_width / 2
         v[:, 1] -= plane_height / 2
 
-        for c in range(len(tag_corner_coordinates[k])):
-            tag_corner_coordinates[k][c] = np.array(config["T_neon_to_mocap"]) @ v[c]
+        # for c in range(len(tag_corner_coordinates[k])):
+        # tag_corner_coordinates[k][c] = np.array(config["T_neon_to_mocap"]) @ v[c]
 
 
 plane_points_3d = np.array([
@@ -117,8 +117,8 @@ plane_points_3d = np.array([
     [-plane_width / 2, -plane_height / 2, 0],  # TL
     [-plane_width / 2, plane_height / 2, 0],  # BL
 ])
-for c in range(len(plane_points_3d)):
-    plane_points_3d[c] = np.array(config["T_neon_to_mocap"]) @ plane_points_3d[c]
+# for c in range(len(plane_points_3d)):
+# plane_points_3d[c] = np.array(config["T_neon_to_mocap"]) @ plane_points_3d[c]
 
 neon = Neon(recording=neon_rec)
 apriltag_detector = Detector(
@@ -258,6 +258,7 @@ for marker in config["neon_marker_labels"]:
 
 mocap_surface.construct_pose_simple(
     config["ir_marker_radius"],
+    np.array(config["T_mocap_to_apriltag"]),
     orient_towards=np.array([
         mocap_head.markers[0].Xs,
         mocap_head.markers[0].Ys,
