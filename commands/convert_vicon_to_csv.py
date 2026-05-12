@@ -18,7 +18,7 @@ parser.add_argument(
     required=True,
 )
 parser.add_argument(
-    "-c", "--c3d_path", help="The path to the Qualisys data (C3D file)", required=True
+    "-c", "--c3d_path", help="The path to the Vicon data (C3D file)", required=True
 )
 parser.add_argument(
     "-o",
@@ -35,6 +35,10 @@ c3d_data = c3d(args["c3d_path"])
 c3d_frate = c3d_data["header"]["points"]["frame_rate"]
 c3d_points = c3d_data["data"]["points"]
 
+# parse sync events
+events_ts = neon_rec.events.time
+events_names = neon_rec.events.event
+
 # vicon assumes perfectly constant sample rate
 nframes = c3d_points.shape[2]
 duration_s = nframes / c3d_frate
@@ -43,9 +47,11 @@ marker_names = c3d_data["parameters"]["POINT"]["LABELS"]["value"]
 
 output_df = pd.DataFrame({})
 
-output_df["timestamp [ns]"] = (
-    np.arange(0, duration_s, step=1.0 / c3d_frate) * 1e9 + neon_rec.scene.time[0]
+marker_time = (
+    np.arange(0, duration_s, step=1.0 / c3d_frate) * 1e9 + neon_rec.info["start_time"]
 )
+
+output_df["timestamp [ns]"] = marker_time
 
 for idx, marker in enumerate(marker_names):
     marker_positions = c3d_points[:, idx, :].squeeze()
