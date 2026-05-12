@@ -158,5 +158,5 @@ marker_positions.to_csv(
     str(Path(args["mocap_path"]).parent)
     + "/"
     + Path(args["mocap_path"]).stem
-    + "_with_gaze.csv"
+    + "_with_gaze_neon_ts.csv"
 )
