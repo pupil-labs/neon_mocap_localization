@@ -115,7 +115,7 @@ class QualisysRecording:
         self.qtm_trim_begin = int(self.qtm_trim_begin) if self.qtm_trim_begin else 0
         self.qtm_trim_end = (
             -int(self.qtm_trim_end + 1)
-            if self.qtm_trim_end
+            if self.qtm_trim_end is not None
             else self.qtm_reference_positions.shape[1]
         )
 
@@ -191,7 +191,7 @@ class QualisysRecording:
         self.neon_trim_begin = int(self.neon_trim_begin) if self.neon_trim_begin else 0
         self.neon_trim_end = (
             -int(self.neon_trim_end + 1)
-            if self.neon_trim_end
+            if self.neon_trim_end is not None
             else len(self.neon_reference_gaze)
         )
 
