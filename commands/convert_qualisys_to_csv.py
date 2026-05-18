@@ -1,7 +1,9 @@
 import argparse
+import pickle
 import sys
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -43,45 +45,62 @@ class MainWindow(QMainWindow):
 
         self._prepare_qualisys_window()
         self._prepare_neon_window()
-        self._prepare_export_button()
+        self.prepare_export_column()
 
         self.central_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.central_widget)
 
+    def _prepare_signal_window(
+        self, prefix, trim_begin_slot, trim_end_slot, update_plot
+    ):
+        fig = Figure(figsize=(5, 4), dpi=100)
+        canvas = FigureCanvas(fig)
+        axes = fig.add_subplot(111)
+        toolbar = NavigationToolbar2QT(canvas, self)
+
+        begin_slider = QSlider(Qt.Horizontal)
+        begin_slider.setMinimum(0)
+        begin_slider.setMaximum(5000)
+        begin_slider.setValue(0)
+        begin_slider.valueChanged.connect(trim_begin_slot)
+        begin_label = QLabel("Trim begin: 0")
+
+        end_slider = QSlider(Qt.Horizontal)
+        end_slider.setMinimum(0)
+        end_slider.setMaximum(5000)
+        end_slider.setValue(0)
+        end_slider.valueChanged.connect(trim_end_slot)
+        end_label = QLabel("Trim end: 0")
+
+        layout = QVBoxLayout()
+        layout.addWidget(toolbar)
+        layout.addWidget(canvas)
+        layout.addWidget(begin_label)
+        layout.addWidget(begin_slider)
+        layout.addWidget(end_label)
+        layout.addWidget(end_slider)
+
+        self.main_layout.addLayout(layout)
+
+        setattr(self, f"{prefix}_fig", fig)
+        setattr(self, f"{prefix}_canvas", canvas)
+        setattr(self, f"{prefix}_axes", axes)
+        setattr(self, f"{prefix}_toolbar", toolbar)
+        setattr(self, f"{prefix}_begin_slider", begin_slider)
+        setattr(self, f"{prefix}_begin_label", begin_label)
+        setattr(self, f"{prefix}_end_slider", end_slider)
+        setattr(self, f"{prefix}_end_label", end_label)
+        setattr(self, f"{prefix}_layout", layout)
+
+        update_plot()
+
     def _prepare_qualisys_window(self):
-        self.qtm_fig = Figure(figsize=(5, 4), dpi=100)
-        self.qtm_canvas = FigureCanvas(self.qtm_fig)
-        self.qtm_axes = self.qtm_fig.add_subplot(111)
-
-        self.qtm_toolbar = NavigationToolbar2QT(self.qtm_canvas, self)
-
-        self.qtm_begin_slider = QSlider(Qt.Horizontal)
-        self.qtm_begin_slider.setMinimum(0)
-        self.qtm_begin_slider.setMaximum(5000)
-        self.qtm_begin_slider.setValue(0)
-        self.qtm_begin_slider.valueChanged.connect(self.update_qualisys_trim_begin)
-        self.qtm_begin_label = QLabel("Trim begin: 0")
-
-        self.qtm_end_slider = QSlider(Qt.Horizontal)
-        self.qtm_end_slider.setMinimum(0)
-        self.qtm_end_slider.setMaximum(5000)
-        self.qtm_end_slider.setValue(0)
-        self.qtm_end_slider.valueChanged.connect(self.update_qualisys_trim_end)
-        self.qtm_end_label = QLabel("Trim end: 0")
-
-        self.qtm_layout = QVBoxLayout()
-        self.qtm_layout.addWidget(self.qtm_toolbar)
-        self.qtm_layout.addWidget(self.qtm_canvas)
-
-        self.qtm_layout.addWidget(self.qtm_begin_label)
-        self.qtm_layout.addWidget(self.qtm_begin_slider)
-
-        self.qtm_layout.addWidget(self.qtm_end_label)
-        self.qtm_layout.addWidget(self.qtm_end_slider)
-
-        self.main_layout.addLayout(self.qtm_layout)
-
-        self.update_qualisys_plot()
+        self._prepare_signal_window(
+            "qtm",
+            self.update_qualisys_trim_begin,
+            self.update_qualisys_trim_end,
+            self.update_qualisys_plot,
+        )
 
     @Slot(int)
     def update_qualisys_trim_begin(self, value):
@@ -108,7 +127,7 @@ class MainWindow(QMainWindow):
             self.qualisys_rec.qtm_trim_begin : self.qualisys_rec.qtm_trim_end
         ]
 
-        _, _, offs = time_sync_utils.align_signals(
+        offs = time_sync_utils.align_signals(
             self.qualisys_rec.qtm_data_for_alignment,
             self.qualisys_rec.xdf_data_for_alignment,
             self.qualisys_rec.xdf_ts_for_alignment,
@@ -130,9 +149,9 @@ class MainWindow(QMainWindow):
             self.qualisys_rec.qtm_reference_positions[0, :].squeeze(),
         )
 
-        mid_idx = len(self.qualisys_rec.aligned_qtm_ts) // 2
-        mid_ts = self.qualisys_rec.aligned_qtm_ts[mid_idx]
-        self.qtm_axes.set_xlim(mid_ts - 0.5, mid_ts + 0.5)
+        # mid_idx = len(self.qualisys_rec.aligned_qtm_ts) // 2
+        # mid_ts = self.qualisys_rec.aligned_qtm_ts[mid_idx]
+        # self.qtm_axes.set_xlim(mid_ts - 0.5, mid_ts + 0.5)
         self.qtm_axes.set_ylim(
             np.min(self.qualisys_rec.qtm_data_resampled),
             np.max(self.qualisys_rec.qtm_data_resampled),
@@ -141,39 +160,12 @@ class MainWindow(QMainWindow):
         self.qtm_canvas.draw()
 
     def _prepare_neon_window(self):
-        self.neon_fig = Figure(figsize=(5, 4), dpi=100)
-        self.neon_canvas = FigureCanvas(self.neon_fig)
-        self.neon_axes = self.neon_fig.add_subplot(111)
-
-        self.neon_toolbar = NavigationToolbar2QT(self.neon_canvas, self)
-
-        self.neon_begin_slider = QSlider(Qt.Horizontal)
-        self.neon_begin_slider.setMinimum(0)
-        self.neon_begin_slider.setMaximum(5000)
-        self.neon_begin_slider.setValue(0)
-        self.neon_begin_slider.valueChanged.connect(self.update_neon_trim_begin)
-        self.neon_begin_label = QLabel("Trim begin: 0")
-
-        self.neon_end_slider = QSlider(Qt.Horizontal)
-        self.neon_end_slider.setMinimum(0)
-        self.neon_end_slider.setMaximum(5000)
-        self.neon_end_slider.setValue(0)
-        self.neon_end_slider.valueChanged.connect(self.update_neon_trim_end)
-        self.neon_end_label = QLabel("Trim end: 0")
-
-        self.neon_layout = QVBoxLayout()
-        self.neon_layout.addWidget(self.neon_toolbar)
-        self.neon_layout.addWidget(self.neon_canvas)
-
-        self.neon_layout.addWidget(self.neon_begin_label)
-        self.neon_layout.addWidget(self.neon_begin_slider)
-
-        self.neon_layout.addWidget(self.neon_end_label)
-        self.neon_layout.addWidget(self.neon_end_slider)
-
-        self.main_layout.addLayout(self.neon_layout)
-
-        self.update_neon_plot()
+        self._prepare_signal_window(
+            "neon",
+            self.update_neon_trim_begin,
+            self.update_neon_trim_end,
+            self.update_neon_plot,
+        )
 
     @Slot(int)
     def update_neon_trim_begin(self, value):
@@ -202,7 +194,7 @@ class MainWindow(QMainWindow):
             ]
         )
 
-        _, _, neon_offset = time_sync_utils.align_signals(
+        neon_offset = time_sync_utils.align_signals(
             self.qualisys_rec.neon_gaze_for_alignment,
             self.qualisys_rec.xdf_neon_data_for_alignment,
             self.qualisys_rec.xdf_gaze_ts_for_alignment,
@@ -225,9 +217,9 @@ class MainWindow(QMainWindow):
             self.qualisys_rec.neon_reference_gaze,
         )
 
-        mid_idx = len(self.qualisys_rec.aligned_gaze_ts) // 2
-        mid_ts = self.qualisys_rec.aligned_gaze_ts[mid_idx]
-        self.neon_axes.set_xlim(mid_ts - 10, mid_ts + 10)
+        # mid_idx = len(self.qualisys_rec.aligned_gaze_ts) // 2
+        # mid_ts = self.qualisys_rec.aligned_gaze_ts[mid_idx]
+        # self.neon_axes.set_xlim(mid_ts - 10, mid_ts + 10)
         self.neon_axes.set_ylim(
             np.min(self.qualisys_rec.neon_reference_gaze),
             np.max(self.qualisys_rec.neon_reference_gaze),
@@ -235,7 +227,7 @@ class MainWindow(QMainWindow):
 
         self.neon_canvas.draw()
 
-    def _prepare_export_button(self):
+    def prepare_export_column(self):
         self.export_button = QPushButton("Export Synced Data")
         self.exported_label = QLabel("")
 
@@ -249,11 +241,18 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def export_data(self):
+        self.exported_label.setText("Exporting data...")
+
         self.export_mocap_neon_synced_csv()
         self.export_gaze_time_in_mocap_time()
         self.export_imu_in_xdf_time()
 
         self.exported_label.setText("Data export finished!")
+
+        neon_rec_path_file = self.mat_export_dir / (
+            Path(self.qualisys_rec.mat_path).stem + "_neon_rec_path.txt"
+        )
+        neon_rec_path_file.write_text(self.neon_rec_path)
 
     def export_mocap_neon_synced_csv(self):
         marker_df = pd.DataFrame()
@@ -292,15 +291,16 @@ class MainWindow(QMainWindow):
             marker_pos_y_in_neon = fy(self.qualisys_rec.aligned_gaze_ts)
             marker_pos_z_in_neon = fz(self.qualisys_rec.aligned_gaze_ts)
 
-        marker_df[f"{marker}_X"] = list(marker_pos_x_in_neon)
-        marker_df[f"{marker}_Y"] = list(marker_pos_y_in_neon)
-        marker_df[f"{marker}_Z"] = list(marker_pos_z_in_neon)
+            marker_df[f"{marker}_X"] = list(marker_pos_x_in_neon)
+            marker_df[f"{marker}_Y"] = list(marker_pos_y_in_neon)
+            marker_df[f"{marker}_Z"] = list(marker_pos_z_in_neon)
 
         marker_df.to_csv(
             self.mat_export_dir
-            + "/"
-            + Path(self.qualisys_rec.mat_path).stem
-            + "_marker_positions_neon_ts.csv"
+            / (
+                str(Path(self.qualisys_rec.mat_path).stem)
+                + "_marker_positions_neon_ts.csv"
+            )
         )
 
     def export_gaze_time_in_mocap_time(self):
@@ -328,73 +328,48 @@ class MainWindow(QMainWindow):
                     )
                     break
 
-        np.savetxt(
-            self.xdf_export_dir
-            + "/"
-            + Path(self.qualisys_rec.mat_path).stem
-            + "_first_overlapping_gaze_index.txt",
-            np.array([first_overlapping_gaze_idx]),
-        )
-
-        np.savetxt(
-            self.xdf_export_dir
-            + "/"
-            + Path(self.qualisys_rec.mat_path).stem
-            + "_last_overlapping_gaze_index.txt",
-            np.array([last_overlapping_gaze_idx]),
-        )
-
-        np.savetxt(
-            self.xdf_export_dir
-            + "/"
-            + Path(self.qualisys_rec.mat_path).stem
-            + "_first_overlapping_gaze_xdf_timestamp.txt",
-            np.array([self.qualisys_rec.aligned_gaze_ts[first_overlapping_gaze_idx]]),
-        )
-
-        np.savetxt(
-            self.xdf_export_dir
-            + "/"
-            + Path(self.qualisys_rec.mat_path).stem
-            + "_last_overlapping_gaze_xdf_timestamp.txt",
-            np.array([self.qualisys_rec.aligned_gaze_ts[last_overlapping_gaze_idx]]),
-        )
-
         gaze_time_in_qtm_xdf = self.qualisys_rec.aligned_gaze_ts[
             first_overlapping_gaze_idx:last_overlapping_gaze_idx
         ]
-        np.savetxt(
-            self.xdf_export_dir
-            + "/"
-            + Path(self.qualisys_rec.mat_path).stem
-            + "_overlapping_gaze_time_in_xdf.txt",
-            gaze_time_in_qtm_xdf,
-        )
-
         gaze_time_in_qtm = gaze_time_in_qtm_xdf - self.qualisys_rec.aligned_qtm_ts[0]
-        np.savetxt(
-            self.xdf_export_dir
-            + "/"
-            + Path(self.qualisys_rec.mat_path).stem
-            + "_overlapping_gaze_time_in_qualisys.txt",
-            gaze_time_in_qtm,
-        )
 
-        np.savetxt(
-            self.xdf_export_dir
-            + "/"
-            + Path(self.qualisys_rec.mat_path).stem
-            + "_first_qtm_xdf_timestamp.txt",
-            np.array([self.qualisys_rec.aligned_qtm_ts[0]]),
+        fig, ax = plt.subplots()
+        ax.plot(
+            self.qualisys_rec.aligned_qtm_ts,
+            self.qualisys_rec.qtm_reference_positions[0, :],
+            label="QTM Aligned Data",
         )
-
-        np.savetxt(
-            self.xdf_export_dir
-            + "/"
-            + Path(self.qualisys_rec.mat_path).stem
-            + "_gaze_time_in_xdf.txt",
+        ax.plot(
             self.qualisys_rec.aligned_gaze_ts,
+            self.qualisys_rec.neon_reference_gaze,
+            label="Gaze Aligned Datr",
         )
+        plt.xlabel("Time [s]")
+        plt.ylabel("Data [a.u.]")
+        plt.title("Synced Gaze and MoCap Data")
+        plt.legend()
+        plt.show()
+
+        gaze_timing_data = {
+            "first_overlapping_gaze_idx": first_overlapping_gaze_idx,
+            "last_overlapping_gaze_idx": last_overlapping_gaze_idx,
+            "first_overlapping_gaze_xdf_timestamp": self.qualisys_rec.aligned_gaze_ts[
+                first_overlapping_gaze_idx
+            ],
+            "last_overlapping_gaze_xdf_timestamp": self.qualisys_rec.aligned_gaze_ts[
+                last_overlapping_gaze_idx - 1
+            ],
+            "overlapping_gaze_time_in_xdf": gaze_time_in_qtm_xdf,
+            "overlapping_gaze_time_in_qualisys": gaze_time_in_qtm,
+            "first_qtm_xdf_timestamp": self.qualisys_rec.aligned_qtm_ts[0],
+            "gaze_time_in_xdf": self.qualisys_rec.aligned_gaze_ts,
+        }
+
+        pkl_path = Path(self.xdf_export_dir) / (
+            Path(self.qualisys_rec.mat_path).stem + "_gaze_timing_data.pkl"
+        )
+        with open(pkl_path, "wb") as f:
+            pickle.dump(gaze_timing_data, f)
 
     def export_imu_in_xdf_time(self):
         f_imu_time = interp1d(
@@ -407,9 +382,7 @@ class MainWindow(QMainWindow):
         imu_time_in_xdf = f_imu_time(self.qualisys_rec.neon_rec.imu.time)
         np.savetxt(
             self.xdf_export_dir
-            + "/"
-            + Path(args["mocap_mat_path"]).stem
-            + "_imu_time_in_xdf.txt",
+            / (str(Path(args["mocap_mat_path"]).stem) + "_imu_time_in_xdf.txt"),
             imu_time_in_xdf,
         )
 
