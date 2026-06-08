@@ -38,6 +38,14 @@ c3d_points = c3d_data["data"]["points"]
 # parse sync events
 events_ts = neon_rec.events.time
 events_names = neon_rec.events.event
+mocap_start_ts = None
+mocap_end_ts = None
+for i, name in enumerate(events_names):
+    if name == "Mocap start":
+        mocap_start_neon_ts_ns = events_ts[i]
+    elif name == "Mocap end":
+        mocap_end_neon_ts_ns = events_ts[i]
+
 
 # vicon assumes perfectly constant sample rate
 nframes = c3d_points.shape[2]
@@ -47,8 +55,11 @@ marker_names = c3d_data["parameters"]["POINT"]["LABELS"]["value"]
 
 output_df = pd.DataFrame({})
 
-marker_time = (
-    np.arange(0, duration_s, step=1.0 / c3d_frate) * 1e9 + neon_rec.info["start_time"]
+marker_time = np.arange(
+    mocap_start_neon_ts_ns,
+    mocap_end_neon_ts_ns,
+    step=int((1.0 / c3d_frate) * 1e9),
+    dtype=np.int64,
 )
 
 output_df["timestamp [ns]"] = marker_time
