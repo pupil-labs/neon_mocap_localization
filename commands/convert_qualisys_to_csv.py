@@ -252,7 +252,7 @@ class MainWindow(QMainWindow):
         neon_rec_path_file = self.mat_export_dir / (
             Path(self.qualisys_rec.mat_path).stem + "_neon_rec_path.txt"
         )
-        neon_rec_path_file.write_text(self.neon_rec_path)
+        neon_rec_path_file.write_text(self.qualisys_rec.neon_rec_path)
 
     def export_mocap_neon_synced_csv(self):
         marker_df = pd.DataFrame()
@@ -380,9 +380,9 @@ class MainWindow(QMainWindow):
         )
 
         imu_time_in_xdf = f_imu_time(self.qualisys_rec.neon_rec.imu.time)
-        np.savetxt(
+        np.save(
             self.xdf_export_dir
-            / (str(Path(args["mocap_mat_path"]).stem) + "_imu_time_in_xdf.txt"),
+            / (str(Path(args["mocap_mat_path"]).stem) + "_imu_time_in_xdf.npy"),
             imu_time_in_xdf,
         )
 
