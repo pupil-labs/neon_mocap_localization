@@ -140,6 +140,9 @@ for frame in tqdm(range(len(marker_positions))):
         if config["flip_gaze_y"]:
             gaze_dir_mocap[1] *= -1
 
+        if config["flip_gaze_z"]:
+            gaze_dir_mocap[2] *= -1
+
         gaze_origins[frame, :] = (
             neon.transformed_pose_in_mocap.position
             / config["mocap_unit_conversion_factor"]
@@ -148,7 +151,9 @@ for frame in tqdm(range(len(marker_positions))):
         gaze_dir_mocap = neon.transformed_pose_in_mocap.rotation @ gaze_dir_mocap
         gaze_dirs[frame, :] = gaze_dir_mocap
 
-        head_dirs[frame, :] = neon.transformed_pose_in_mocap.rotation @ neutral_mocap_heading
+        head_dirs[frame, :] = (
+            neon.transformed_pose_in_mocap.rotation @ neutral_mocap_heading
+        )
 
 marker_positions["gaze_origin_X"] = gaze_origins[:, 0]
 marker_positions["gaze_origin_Y"] = gaze_origins[:, 1]
