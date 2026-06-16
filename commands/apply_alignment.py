@@ -71,6 +71,7 @@ except Exception:
 # load mocap data
 
 marker_positions = pd.read_csv(args["mocap_path"])
+neutral_mocap_heading = np.array(config["neutral_heading"])
 
 # load calibration data
 
@@ -89,6 +90,7 @@ with open(args["calibration_name"], "rb") as file:
 
 gaze_origins = np.zeros((len(marker_positions), 3))
 gaze_dirs = np.zeros((len(marker_positions), 3))
+head_dirs = np.zeros((len(marker_positions), 3))
 
 for frame in tqdm(range(len(marker_positions))):
     marker_timestamp = int(marker_positions["timestamp [ns]"].iloc[frame])
@@ -138,6 +140,9 @@ for frame in tqdm(range(len(marker_positions))):
         if config["flip_gaze_y"]:
             gaze_dir_mocap[1] *= -1
 
+        if config["flip_gaze_z"]:
+            gaze_dir_mocap[2] *= -1
+
         gaze_origins[frame, :] = (
             neon.transformed_pose_in_mocap.position
             / config["mocap_unit_conversion_factor"]
@@ -145,6 +150,10 @@ for frame in tqdm(range(len(marker_positions))):
 
         gaze_dir_mocap = neon.transformed_pose_in_mocap.rotation @ gaze_dir_mocap
         gaze_dirs[frame, :] = gaze_dir_mocap
+
+        head_dirs[frame, :] = (
+            neon.transformed_pose_in_mocap.rotation @ neutral_mocap_heading
+        )
 
 marker_positions["gaze_origin_X"] = gaze_origins[:, 0]
 marker_positions["gaze_origin_Y"] = gaze_origins[:, 1]
@@ -154,9 +163,13 @@ marker_positions["gaze_dir_X"] = gaze_dirs[:, 0]
 marker_positions["gaze_dir_Y"] = gaze_dirs[:, 1]
 marker_positions["gaze_dir_Z"] = gaze_dirs[:, 2]
 
+marker_positions["head_dir_X"] = head_dirs[:, 0]
+marker_positions["head_dir_Y"] = head_dirs[:, 1]
+marker_positions["head_dir_Z"] = head_dirs[:, 2]
+
 marker_positions.to_csv(
     str(Path(args["mocap_path"]).parent)
     + "/"
     + Path(args["mocap_path"]).stem
-    + "_with_gaze.csv"
+    + "_with_gaze_neon_ts.csv"
 )
