@@ -24,13 +24,14 @@ Before proceeding to data collection, it is critical to establish a proper time 
 **Specific Vendor Instructions:**
 
 - **Qualisys / OptiTrack:** Use the **Lab Streaming Layer (LSL)** method. Capture Neon's LSL Gaze Stream and the MoCap LSL streams. If using Optitrack, make sure Motive's start/stop events are recorded via LSL.
-- **Vicon:** Use a Vicon LockBox with an Arduino (or any suitable microcontroller or SBC):
-  - The Vicon LockBox puts out regular TTL sync pulses.
-  - These TTL pulses can be received by the Arduino/ and timestamped, making sure to
-    account for transmission delay.
+- **Vicon:** Use a Vicon LockBox with an Arduino (or any suitable microcontroller or SBC, such as a Raspberry Pi):
+  - The Vicon LockBox puts out regular TTL sync pulses. For example, you can use [the Duration.gpo configuration](https://vicon-help.atlassian.net/wiki/spaces/Connect/pages/1611203/Synchronization+output+GPO+configuration+files).
+  - These TTL pulses can be received by the Arduino/SBC and timestamped, making sure to
+    account for transmission delay. The delay can be measured with [Vicon's DataStream SDK](https://www.vicon.com/software/datastream-sdk/).
   - These can then be forwarded to a recording PC, which receives them via
     [pyserial](https://pyserial.readthedocs.io/en/latest/pyserial.html).
-  - The recording PC, then converts these to Neon [Events](https://docs.pupil-labs.com/neon/data-collection/events/) and sends them to Neon via the [Real-time API](https://pupil-labs.github.io/pl-realtime-api/dev/methods/simple/remote-control/#save-events).
+  - The recording PC then converts these to Neon [Events](https://docs.pupil-labs.com/neon/data-collection/events/) and sends them to Neon via the [Real-time API](https://pupil-labs.github.io/pl-realtime-api/dev/methods/simple/remote-control/#save-events). Make sure to apply [clock-offset correction](https://docs.pupil-labs.com/neon/data-collection/time-synchronization/#improving-synchronization-further), as shown with [example Python code here](https://pupil-labs.github.io/pl-realtime-api/dev/methods/simple/remote-control/#with-manual-clock-offset-correction).
+  - If using the Duration.gpo configuration file, then make sure to update the Vicon start/end Event names in the `config.json` file accordingly (see the Workflows below for details).
 
 If you use one of these methods, then your data will be compatible with our sync & conversion scripts described below.
 
@@ -123,6 +124,9 @@ The `config.json` file controls the localization parameters. Ensure these match 
 | Key                            | Type   | Description                                                                                                                                                                               |
 | ------------------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `qualisys_reference_marker`    | String | The label of a clearly detected marker used for Qualisys LSL time sync. Leave as the empty string, "", if you do not use a Qualisys device.                                               |
+| `qualisys_frame_rate`          | Int    | The frame rate of the Qualisys recording.                                                                                                                                                 |
+| `vicon_start_event_name`       | String | The name of the Neon Event that corresponds to the **start** of a Vicon recording when using the Duration.gpo configuration.                                                              |
+| `vicon_end_event_name`         | String | The name of the Neon Event that corresponds to the **end** of a Vicon recording when using the Duration.gpo configuration.                                                                |
 | `mocap_unit_conversion_factor` | Float  | Internally, the scripts expect distances in meters. If your MoCap system does not record in meters, then use this option to scale it appropriately (default: `0.001`).                    |
 | `neon_marker_labels`           | Object | A map containing the labels assigned to the headset markers in the MoCap software. The keys of the map must be left untouched (e.g., "Top Left", "Right Middle"); only change the values. |
 
@@ -223,22 +227,29 @@ python ./commands/convert_vicon_to_csv.py -h
 
 The `config.json` file controls the localization parameters. Ensure these match the physical setup. See the example in `examples/config_precise.json` for reference. The parameters necessary for a precise calibration are detailed in the table below:
 
-| Key                                 | Type    | Description                                                                                                                                                                                                                                                                           |
-| ----------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `qualisys_reference_marker`         | String  | The label of a clearly detected marker used for Qualisys LSL time sync. Leave as the empty string, "", if you do not use a Qualisys device.                                                                                                                                           |
-| `T_mocap_to_apriltag`               | Matrix  | Transformation matrix aligning the local coordinate system of the calibration board in MoCap space with the local coordinate system of the calibration board in Neon scene camera space.                                                                                              |
-| `flip_gaze_x`                       | Boolean | If the MoCap coordinate system has X positive to the left, set this to true.                                                                                                                                                                                                          |
-| `flip_gaze_y`                       | Boolean | If the MoCap coordinate system has Y positive downwards, set this to true.                                                                                                                                                                                                            |
-| `apriltag_black_side_length`        | Float   | The length of one black side of a printed AprilTag (in **meters**).                                                                                                                                                                                                                   |
-| `ir_marker_radius`                  | Float   | The radius of the physical IR markers (in **meters**; default: `0.006`).                                                                                                                                                                                                              |
-| `apriltag_pattern_width`            | Float   | The distance from the top left corner of the top left AprilTag to the top right corner of the top right AprilTag (in **meters**).                                                                                                                                                     |
-| `apriltag_pattern_height`           | Float   | The distance from the top left corner of the top left AprilTag to the bottom left corner of the bottom left AprilTag (in **meters**).                                                                                                                                                 |
-| `mocap_unit_conversion_factor`      | Float   | Internally, the scripts expect distances in meters. If your MoCap system does not record in meters, then use this option to scale it appropriately (default: `0.001`).                                                                                                                |
-| `neon_marker_labels`                | Array   | The labels assigned to the headset markers in the MoCap software.                                                                                                                                                                                                                     |
-| `apriltag_marker_labels`            | Object  | A map holding the labels assigned to the calibration board markers. The keys of the map must be "Top Left", "Top Right", "Bottom Right", and "Bottom Left" and should of course correspond to the IR markers in those positions.                                                      |
-| `apriltags_to_use`                  | Array   | List of AprilTag IDs used on your board (e.g., `["0", "1", "2", "3"]`).                                                                                                                                                                                                               |
-| `apriltag_corner_local_coordinates` | Object  | The local (X,Y) coordinates of the 16 AprilTag corners (see **Local Corner Measurements** below; default is meters, but other units are acceptable, see `corner_unit_conversion`). The coordinates are saved as array values in a map whose keys are the IDs from `apriltags_to_use`. |
-| `corner_unit_conversion`            | Float   | Multiplier if your local coordinates are not in meters (default: `1.0`). See **Local Corner Measurements** below.                                                                                                                                                                     |
+| Key                         | Type    | Description                                                                                                                                                                              |
+| --------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `qualisys_reference_marker` | String  | The label of a clearly detected marker used for Qualisys LSL time sync. Leave as the empty string, "", if you do not use a Qualisys device.                                              |
+| `qualisys_frame_rate`       | Int     | The frame rate of the Qualisys recording.                                                                                                                                                |
+| `vicon_start_event_name`    | String  | The name of the Neon Event that corresponds to the **start** of a Vicon recording when using the Duration.gpo configuration.                                                             |
+| `vicon_end_event_name`      | String  | The name of the Neon Event that corresponds to the **end** of a Vicon recording when using the Duration.gpo configuration.                                                               |
+| `T_mocap_to_apriltag`       | Matrix  | Transformation matrix aligning the local coordinate system of the calibration board in MoCap space with the local coordinate system of the calibration board in Neon scene camera space. |
+| `flip_gaze_x`               | Boolean | If the MoCap coordinate system has X positive to the left, set this to true.                                                                                                             |
+| `flip_gaze_y`               | Boolean | If the MoCap coordinate system has Y positive downwards, set this to true.                                                                                                               |
+| `flip_gaze_z`               | Boolean | If the MoCap coordinate system has Z positive backwards, set this to                                                                                                                     |
+
+true.
+|
+| `apriltag_black_side_length` | Float | The length of one black side of a printed AprilTag (in **meters**). |
+| `ir_marker_radius` | Float | The radius of the physical IR markers (in **meters**; default: `0.006`). |
+| `apriltag_pattern_width` | Float | The distance from the top left corner of the top left AprilTag to the top right corner of the top right AprilTag (in **meters**). |
+| `apriltag_pattern_height` | Float | The distance from the top left corner of the top left AprilTag to the bottom left corner of the bottom left AprilTag (in **meters**). |
+| `mocap_unit_conversion_factor` | Float | Internally, the scripts expect distances in meters. If your MoCap system does not record in meters, then use this option to scale it appropriately (default: `0.001`). |
+| `neon_marker_labels` | Array | The labels assigned to the headset markers in the MoCap software. |
+| `apriltag_marker_labels` | Object | A map holding the labels assigned to the calibration board markers. The keys of the map must be "Top Left", "Top Right", "Bottom Right", and "Bottom Left" and should of course correspond to the IR markers in those positions. |
+| `apriltags_to_use` | Array | List of AprilTag IDs used on your board (e.g., `["0", "1", "2", "3"]`). |
+| `apriltag_corner_local_coordinates` | Object | The local (X,Y) coordinates of the 16 AprilTag corners (see **Local Corner Measurements** below; default is meters, but other units are acceptable, see `corner_unit_conversion`). The coordinates are saved as array values in a map whose keys are the IDs from `apriltags_to_use`. |
+| `corner_unit_conversion` | Float | Multiplier if your local coordinates are not in meters (default: `1.0`). See **Local Corner Measurements** below. |
 
 #### 4. Step A: Compute Calibration
 
